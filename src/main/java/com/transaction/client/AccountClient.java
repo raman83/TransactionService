@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import com.account.dto.AccountOwnerResponse;
 
-@FeignClient(name = "account-service", url = "http://localhost:8084")
+@FeignClient(name = "account-service", url = "${account.service.url}")
 public interface AccountClient {
 
     @GetMapping("/api/v1/accounts/{id}/owner")

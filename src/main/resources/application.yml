@@ -1,23 +1,4 @@
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/transactiondb
-    username: postgres
-    password: postgres
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-   
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: http://localhost:8081/.well-known/jwks.json
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}  # default to dev
 
-
-server:
-  port: 8091
-
-
-application:
-  name: transaction-service
