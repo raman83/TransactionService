@@ -43,7 +43,12 @@ public class TransactionService {
 	    private String getCurrentCustomerId() {
 	        var principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 	        if (principal instanceof Jwt jwt) {
-	            return jwt.getSubject();
+	        	 String customerId = jwt.getClaim("customer_id");  // 'customer_id' custom claim
+	             if (customerId != null) {
+	                 return customerId;
+	             } else {
+	                 throw new UnauthorizedAccessException("Customer ID not found in token.");
+	             }
 	        }
 	        throw new UnauthorizedAccessException("Invalid or missing authentication token.");
 	    }
