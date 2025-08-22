@@ -7,59 +7,58 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
-
-
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "transactions", indexes = {
-    @Index(name = "idx_account_posted_date", columnList = "accountId, postedDate")
-})
+@Table(name = "transaction",
+       indexes = {
+           @Index(name = "idx_tx_account", columnList = "accountId"),
+           @Index(name = "idx_tx_posted", columnList = "postedDate")
+       },
+       uniqueConstraints = {
+           @UniqueConstraint(name = "uk_tx_request_fp", columnNames = {"requestFingerprint"})
+       })
 public class Transaction {
 
-	@Id
-    @Column(name = "transaction_id", nullable = false, updatable = false)
-    private UUID transactionId;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
 
-    @Column(name = "account_id", nullable = false)
+    private UUID transactionId;
     private UUID accountId;
 
-    @Column(nullable = false)
-    private String type;
-
-    @Column(nullable = false, precision = 19, scale = 4)
+    private String type;     // DEBIT/CREDIT
+    @Column(precision = 19, scale = 4)
     private BigDecimal amount;
 
-    @Column(nullable = false)
-    private String currency;
-
-    @Column(nullable = false)
     private OffsetDateTime postedDate;
-
-    @Column(nullable = false)
     private OffsetDateTime transactionDate;
 
-    @Column(length = 255)
     private String description;
-
-    @Column(nullable = false)
-    private String status;
-
-    @Column(length = 100)
+    private String status;   // PENDING/POSTED/etc
     private String category;
 
     @Column(precision = 19, scale = 4)
     private BigDecimal runningBalance;
 
-    @Column(length = 100)
     private String merchantName;
-
-    @Column(length = 100)
     private String referenceNumber;
+
+    @Column(length = 64)
+    private String requestFingerprint;
+
+    @Version
+    private Integer version;
+
+    @PrePersist
+    void prePersist() {
+        if (postedDate == null) postedDate = OffsetDateTime.now();
+        if (transactionDate == null) transactionDate = postedDate;
+        if (version == null) version = 0;
+    }
 }

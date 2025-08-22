@@ -32,17 +32,21 @@ public class TransactionController {
 
     @PostMapping("/transactions")
     @PreAuthorize("hasAuthority('SCOPE_fdx:transactions.write')")
-    public ResponseEntity<TransactionResponse> createTransaction(
-            @Valid @RequestBody TransactionRequest request) {
-
-        Transaction transaction = transactionMapper.toEntity(request);
-        transaction.setTransactionId(UUID.randomUUID());
-        Transaction saved = transactionService.save(transaction);
-
-        TransactionResponse responseDto = transactionMapper.toResponse(saved);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
-    }
-
+    public ResponseEntity<TransactionResponse> create(@Valid @RequestBody TransactionRequest request,
+    		@RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey) {
+    	Transaction tx = transactionMapper.toEntity(request);
+    	tx.setTransactionId(UUID.randomUUID());
+    	if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+    	tx.setRequestFingerprint(idempotencyKey.trim());
+    	}
+    	Transaction saved = transactionService.save(tx);
+    	return ResponseEntity.status(HttpStatus.CREATED)
+    	.eTag('"' + String.valueOf(saved.getVersion()) + '"')
+    	.body(transactionMapper.toResponse(saved));
+    	}
+    
+    
+    
     @GetMapping("/transactions")
     @PreAuthorize("hasAuthority('SCOPE_fdx:transactions.read')")
     public ResponseEntity<List<TransactionResponse>> getTransactions(

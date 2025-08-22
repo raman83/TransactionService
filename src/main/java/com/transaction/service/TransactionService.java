@@ -7,6 +7,8 @@ import com.transaction.client.AccountClient;
 import com.transaction.entity.Transaction;
 import com.transaction.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +17,7 @@ import org.springframework.data.domain.Sort;
 
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,6 +29,7 @@ import java.nio.file.AccessDeniedException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TransactionService {
 	  private final TransactionRepository transactionRepository;
 	  private final AccountClient accountClient;
@@ -78,7 +82,15 @@ public class TransactionService {
 	                .orElseThrow(() -> new ResourceNotFoundException("Transaction not found for id: " + transactionId));
 	    }
 
-	    public Transaction save(Transaction transaction) {
-	        return transactionRepository.save(transaction);
-	    }
+	    public Transaction save(Transaction tx) {
+	    	// If caller populated requestFingerprint, dedupe on it
+	    	if (tx.getRequestFingerprint() != null && !tx.getRequestFingerprint().isBlank()) {
+	    	Optional<Transaction> dup = transactionRepository.findByRequestFingerprint(tx.getRequestFingerprint());
+	    	if (dup.isPresent()) {
+	    	log.info("Idempotent replay for transaction fp={}", tx.getRequestFingerprint());
+	    	return dup.get();
+	    	}
+	    	}
+	    	return transactionRepository.save(tx);
+	    	}
 }
